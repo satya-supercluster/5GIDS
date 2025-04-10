@@ -37,9 +37,10 @@ function App() {
 
   const introduceAnomaly = async () => {
     try {
-      await fetch("http://localhost:8000/introduce_anomaly", {
+      const res=await fetch("http://localhost:8000/introduce_anomaly", {
         method: "POST",
       });
+      console.log(await res.json())
     } catch (error) {
       console.error("Error introducing anomaly:", error);
     }

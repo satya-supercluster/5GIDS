@@ -6,4 +6,5 @@ numpy
 pandas
 scikit_learn
 tensorflow
+websockets
 tensorflow_intel
