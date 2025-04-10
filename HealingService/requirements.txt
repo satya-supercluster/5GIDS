@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+langchain
+llama-cpp-python
+guardrails
