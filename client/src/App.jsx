@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 const featureNames = [
@@ -34,8 +35,11 @@ function App() {
   const [chartData, setChartData] = useState([]);
   const [anomalyData, setAnomalyData] = useState(null);
   const [mitigation, setMitigation] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [threshold, setThreshold] = useState(0.7);
 
   const introduceAnomaly = async () => {
+    setLoading(true);
     try {
       const res = await fetch("http://localhost:8000/introduce_anomaly", {
         method: "POST",
@@ -43,6 +47,8 @@ function App() {
       console.log(await res.json());
     } catch (error) {
       console.error("Error introducing anomaly:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,9 +79,12 @@ function App() {
               JSON.stringify(data.features)
             )}`
           );
-          setMitigation(await response.text());
+          if(response.ok){
+            setMitigation((await response.json()).raw_output);
+          }
         } catch (error) {
-          setMitigation(`Error: ${error.message}`);
+          // setMitigation(`Error: ${error.message}`);
+          console.log(`Error: ${error.message}`);
         }
       }
     };
@@ -97,7 +106,19 @@ function App() {
         <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient
+                    id="colorProbability"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#4b5563" />
                 <XAxis
                   dataKey="time"
@@ -118,10 +139,23 @@ function App() {
                   }}
                   labelStyle={{ color: "#f3f4f6" }}
                 />
-                <Line
+                <ReferenceLine
+                  y={threshold}
+                  stroke="#ef4444"
+                  strokeDasharray="3 3"
+                  strokeWidth={2}
+                  label={{
+                    value: "Threshold",
+                    position: "insideTopRight",
+                    fill: "#ef4444",
+                    fontSize: 12,
+                  }}
+                />
+                <Area
                   type="monotone"
                   dataKey="probability"
                   stroke="#f97316"
+                  fill="url(#colorProbability)"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{
@@ -131,17 +165,61 @@ function App() {
                     fill: "#fdba74",
                   }}
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="mt-6">
+            <label className="flex items-center justify-between text-sm font-medium text-gray-300 mb-2">
+              <span>Anomaly Threshold: {threshold.toFixed(2)}</span>
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={threshold}
+              onChange={(e) => setThreshold(parseFloat(e.target.value))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+            />
           </div>
         </div>
 
         <div className="flex space-x-4 mb-6">
           <button
             onClick={introduceAnomaly}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out flex-1"
+            disabled={loading}
+            className={`bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out flex-1 flex items-center justify-center ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
           >
-            Trigger Anomaly
+            {loading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              "Trigger Anomaly"
+            )}
           </button>
           <button
             onClick={clearData}
@@ -175,7 +253,7 @@ function App() {
                   </span>
                   <span className="text-gray-100">
                     {typeof anomalyData[name] === "number"
-                      ? anomalyData[name].toFixed(6)
+                      ? anomalyData[name].toFixed(3)
                       : anomalyData[name]}
                   </span>
                 </div>

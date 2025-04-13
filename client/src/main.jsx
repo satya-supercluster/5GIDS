@@ -5,7 +5,7 @@ import App from './App.jsx'
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <div className="w-full flex justify-center items-center font-primary bg-gray-900">
+    <div className="w-full flex justify-center items-center bg-gray-900">
       <App />
     </div>
   </StrictMode>
