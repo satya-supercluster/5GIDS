@@ -55,7 +55,7 @@ The anomaly traffic data is:
 {anomaly}
 
 Please only respond with the best suitable mitigation strategy from the list.
-
+Do not respond anything else other that the best suitable strategy from the list.
 <|assistant|>"""
 title_prompt = PromptTemplate(template=template, input_variables=["anomaly"])
 title_chain = LLMChain(llm=llm, prompt=title_prompt, output_key="heal") if llm else None
